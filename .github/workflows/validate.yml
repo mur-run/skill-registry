@@ -1,0 +1,39 @@
+name: validate
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install mur
+        run: |
+          curl -fsSL https://mur.run/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - name: Validate registry + index is authoritative
+        run: mur skill registry-index . --check
+  regenerate:
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install mur
+        run: |
+          curl -fsSL https://mur.run/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - name: Regenerate index.yaml
+        run: mur skill registry-index .
+      - name: Commit if changed
+        run: |
+          if ! git diff --quiet index.yaml; then
+            git config user.name "mur-registry-bot"
+            git config user.email "bot@mur.run"
+            git add index.yaml && git commit -m "chore: regenerate index.yaml" && git push
+          fi
