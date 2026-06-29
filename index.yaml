@@ -1,3 +1,16 @@
 schema_version: 1
-updated_at: 2026-06-28T17:50:30.441997340+00:00
-skills: {}
+updated_at: 2026-06-29T00:30:00Z
+skills:
+  mur-compress:
+    latest: 0.1.0
+    description: "Read and recover auto-compressed tool outputs, and compress large text on demand. MUR shrinks big tool results automatically; the original is one mur_retrieve away."
+    publisher: human:mur
+    category: context
+    tags:
+    - mur
+    - compress
+    - tokens
+    - retrieve
+    - builtin
+    content_sha256: "d1629f67ff489e91df88c6060b87d7e0a1bea3230eaaa3195d1d7150ef1f765a"
+    install_count: 0

@@ -1,0 +1,61 @@
+name: mur-compress
+version: 0.1.0
+publisher: human:mur
+description: Read and recover auto-compressed tool outputs, and compress large text on demand. MUR shrinks big tool results automatically; the original is one mur_retrieve away.
+category: context
+provenance: human
+hosts:
+- all
+content:
+  abstract: |
+    Large tool outputs may arrive auto-compressed as
+    {compressed:true, content, hash, note} — sometimes as a single field
+    (e.g. results). Call mur_retrieve with the hash (and the same query, if any)
+    to get the full original back.
+  context: |
+    # mur-compress — Reading and recovering compressed output
+
+    MUR automatically compresses large tool outputs before you read them
+    (search dumps, logs, diffs, big JSON). Compression is reversible.
+
+    ## When a result is an envelope
+    Look for `"compressed": true`. It may be the whole result, or just one field
+    of it — e.g. mur_project_search returns
+    `{ "results": { "compressed": true, "content": …, "hash": "…", "note": … }, "count": 3000 }`,
+    where only the bulky `results` array was shrunk (scalar fields stay intact).
+    The `content` is a compact sample. To recover the full original:
+    ```
+    mur_retrieve(hash="…")              # full original
+    mur_retrieve(hash="…", query="…")   # BM25-filtered to the most relevant items
+    ```
+    Pass the SAME query you used for the search: retrieval ranks the offloaded
+    items by relevance so you pull back only what you need.
+
+    ## Compress something yourself
+    Before pasting a huge blob you control (a log, a giant JSON):
+    ```
+    mur_compress(content="…", query="optional focus")
+    ```
+    Returns the compressed text plus a hash for later retrieval.
+
+    ## Don't fight the gate
+    Small outputs are never compressed (below the token threshold), so most
+    results are untouched. You only need mur_retrieve when you actually see a
+    `compressed:true` envelope.
+
+    ## Turning it off
+    Configured in ~/.mur/compress.yaml under `auto:` (`enabled`, `min_tokens`,
+    `mcp`, `agent_runtime`). Set `enabled: false` to disable entirely.
+tags:
+- mur
+- compress
+- tokens
+- retrieve
+- builtin
+triggers:
+- type: keyword
+  pattern: (compressed:true|mur_retrieve|mur_compress|auto-?compress|token compress)
+- type: manual
+priority: normal
+updated_at: 1970-01-01T00:00:00Z
+publisher_signature: '{"payloadType":"application/vnd.mur.skill+yaml","payload":"bmFtZTogbXVyLWNvbXByZXNzCnZlcnNpb246IDAuMS4wCnB1Ymxpc2hlcjogaHVtYW46bXVyCmRlc2NyaXB0aW9uOiBSZWFkIGFuZCByZWNvdmVyIGF1dG8tY29tcHJlc3NlZCB0b29sIG91dHB1dHMsIGFuZCBjb21wcmVzcyBsYXJnZSB0ZXh0IG9uIGRlbWFuZC4gTVVSIHNocmlua3MgYmlnIHRvb2wgcmVzdWx0cyBhdXRvbWF0aWNhbGx5OyB0aGUgb3JpZ2luYWwgaXMgb25lIG11cl9yZXRyaWV2ZSBhd2F5LgpjYXRlZ29yeTogY29udGV4dApwcm92ZW5hbmNlOiBodW1hbgpob3N0czoKLSBhbGwKY29udGVudDoKICBhYnN0cmFjdDogfAogICAgTGFyZ2UgdG9vbCBvdXRwdXRzIG1heSBhcnJpdmUgYXV0by1jb21wcmVzc2VkIGFzCiAgICB7Y29tcHJlc3NlZDp0cnVlLCBjb250ZW50LCBoYXNoLCBub3RlfSDigJQgc29tZXRpbWVzIGFzIGEgc2luZ2xlIGZpZWxkCiAgICAoZS5nLiByZXN1bHRzKS4gQ2FsbCBtdXJfcmV0cmlldmUgd2l0aCB0aGUgaGFzaCAoYW5kIHRoZSBzYW1lIHF1ZXJ5LCBpZiBhbnkpCiAgICB0byBnZXQgdGhlIGZ1bGwgb3JpZ2luYWwgYmFjay4KICBjb250ZXh0OiB8CiAgICAjIG11ci1jb21wcmVzcyDigJQgUmVhZGluZyBhbmQgcmVjb3ZlcmluZyBjb21wcmVzc2VkIG91dHB1dAoKICAgIE1VUiBhdXRvbWF0aWNhbGx5IGNvbXByZXNzZXMgbGFyZ2UgdG9vbCBvdXRwdXRzIGJlZm9yZSB5b3UgcmVhZCB0aGVtCiAgICAoc2VhcmNoIGR1bXBzLCBsb2dzLCBkaWZmcywgYmlnIEpTT04pLiBDb21wcmVzc2lvbiBpcyByZXZlcnNpYmxlLgoKICAgICMjIFdoZW4gYSByZXN1bHQgaXMgYW4gZW52ZWxvcGUKICAgIExvb2sgZm9yIGAiY29tcHJlc3NlZCI6IHRydWVgLiBJdCBtYXkgYmUgdGhlIHdob2xlIHJlc3VsdCwgb3IganVzdCBvbmUgZmllbGQKICAgIG9mIGl0IOKAlCBlLmcuIG11cl9wcm9qZWN0X3NlYXJjaCByZXR1cm5zCiAgICBgeyAicmVzdWx0cyI6IHsgImNvbXByZXNzZWQiOiB0cnVlLCAiY29udGVudCI6IOKApiwgImhhc2giOiAi4oCmIiwgIm5vdGUiOiDigKYgfSwgImNvdW50IjogMzAwMCB9YCwKICAgIHdoZXJlIG9ubHkgdGhlIGJ1bGt5IGByZXN1bHRzYCBhcnJheSB3YXMgc2hydW5rIChzY2FsYXIgZmllbGRzIHN0YXkgaW50YWN0KS4KICAgIFRoZSBgY29udGVudGAgaXMgYSBjb21wYWN0IHNhbXBsZS4gVG8gcmVjb3ZlciB0aGUgZnVsbCBvcmlnaW5hbDoKICAgIGBgYAogICAgbXVyX3JldHJpZXZlKGhhc2g9IuKApiIpICAgICAgICAgICAgICAjIGZ1bGwgb3JpZ2luYWwKICAgIG11cl9yZXRyaWV2ZShoYXNoPSLigKYiLCBxdWVyeT0i4oCmIikgICAjIEJNMjUtZmlsdGVyZWQgdG8gdGhlIG1vc3QgcmVsZXZhbnQgaXRlbXMKICAgIGBgYAogICAgUGFzcyB0aGUgU0FNRSBxdWVyeSB5b3UgdXNlZCBmb3IgdGhlIHNlYXJjaDogcmV0cmlldmFsIHJhbmtzIHRoZSBvZmZsb2FkZWQKICAgIGl0ZW1zIGJ5IHJlbGV2YW5jZSBzbyB5b3UgcHVsbCBiYWNrIG9ubHkgd2hhdCB5b3UgbmVlZC4KCiAgICAjIyBDb21wcmVzcyBzb21ldGhpbmcgeW91cnNlbGYKICAgIEJlZm9yZSBwYXN0aW5nIGEgaHVnZSBibG9iIHlvdSBjb250cm9sIChhIGxvZywgYSBnaWFudCBKU09OKToKICAgIGBgYAogICAgbXVyX2NvbXByZXNzKGNvbnRlbnQ9IuKApiIsIHF1ZXJ5PSJvcHRpb25hbCBmb2N1cyIpCiAgICBgYGAKICAgIFJldHVybnMgdGhlIGNvbXByZXNzZWQgdGV4dCBwbHVzIGEgaGFzaCBmb3IgbGF0ZXIgcmV0cmlldmFsLgoKICAgICMjIERvbid0IGZpZ2h0IHRoZSBnYXRlCiAgICBTbWFsbCBvdXRwdXRzIGFyZSBuZXZlciBjb21wcmVzc2VkIChiZWxvdyB0aGUgdG9rZW4gdGhyZXNob2xkKSwgc28gbW9zdAogICAgcmVzdWx0cyBhcmUgdW50b3VjaGVkLiBZb3Ugb25seSBuZWVkIG11cl9yZXRyaWV2ZSB3aGVuIHlvdSBhY3R1YWxseSBzZWUgYQogICAgYGNvbXByZXNzZWQ6dHJ1ZWAgZW52ZWxvcGUuCgogICAgIyMgVHVybmluZyBpdCBvZmYKICAgIENvbmZpZ3VyZWQgaW4gfi8ubXVyL2NvbXByZXNzLnlhbWwgdW5kZXIgYGF1dG86YCAoYGVuYWJsZWRgLCBgbWluX3Rva2Vuc2AsCiAgICBgbWNwYCwgYGFnZW50X3J1bnRpbWVgKS4gU2V0IGBlbmFibGVkOiBmYWxzZWAgdG8gZGlzYWJsZSBlbnRpcmVseS4KdGFnczoKLSBtdXIKLSBjb21wcmVzcwotIHRva2VucwotIHJldHJpZXZlCi0gYnVpbHRpbgp0cmlnZ2VyczoKLSB0eXBlOiBrZXl3b3JkCiAgcGF0dGVybjogKGNvbXByZXNzZWQ6dHJ1ZXxtdXJfcmV0cmlldmV8bXVyX2NvbXByZXNzfGF1dG8tP2NvbXByZXNzfHRva2VuIGNvbXByZXNzKQotIHR5cGU6IG1hbnVhbApwcmlvcml0eTogbm9ybWFsCnVwZGF0ZWRfYXQ6IDE5NzAtMDEtMDFUMDA6MDA6MDBaCg==","signatures":[{"keyid":"ed25519-7827db9e","publicKey":"xS+/fxacq1yR0625nC2v+wXr2K462xLOXGOMVrqpUBA=","sig":"9m/gvxbOT8Fr9jBUH0o/pYIa/MjEHoaGPLdb/rBslDljhHpmNTAK0tGBiWkst1t22g1Mo0oGjSQr4Q0cZCJ0Aw=="}]}'
