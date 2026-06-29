@@ -1,3 +1,10 @@
 schema_version: 1
-updated_at: 2026-06-28T17:50:30.441997340+00:00
-skills: {}
+updated_at: 2026-06-29T00:30:00Z
+skills:
+  mur-compress:
+    name: mur-compress
+    latest_version: 0.1.0
+    versions:
+      0.1.0:
+        content_sha256: d1629f67ff489e91df88c6060b87d7e0a1bea3230eaaa3195d1d7150ef1f765a
+        publisher: human:mur
