@@ -3,6 +3,7 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -28,12 +29,21 @@ jobs:
           curl -fsSL https://mur.run/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-      - name: Regenerate index.yaml
-        run: mur skill registry-index .
-      - name: Commit if changed
+      - name: Regenerate index.yaml only if actually stale
         run: |
-          if ! git diff --quiet index.yaml; then
-            git config user.name "mur-registry-bot"
-            git config user.email "bot@mur.run"
-            git add index.yaml && git commit -m "chore: regenerate index.yaml" && git push
+          # `--check` compares the `skills` map and ignores `updated_at`, so it is
+          # the only honest staleness test. Regenerating unconditionally rewrites
+          # the timestamp on every push and commits a no-op — and that bot commit
+          # cannot be validated, because a GITHUB_TOKEN push does not trigger
+          # workflows.
+          if mur skill registry-index . --check; then
+            echo "index.yaml is already authoritative — nothing to do"
+            exit 0
           fi
+          echo "index.yaml is stale — regenerating"
+          mur skill registry-index .
+          git config user.name "mur-registry-bot"
+          git config user.email "bot@mur.run"
+          git add index.yaml
+          git commit -m "chore: regenerate index.yaml"
+          git push
